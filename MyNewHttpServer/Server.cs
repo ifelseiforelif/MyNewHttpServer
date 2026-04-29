@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.Text.Json;
+using System.Web;
 
 namespace MyNewHttpServer;
 
@@ -72,15 +73,20 @@ internal class Server
                         body = await reader.ReadToEndAsync();
                         try
                         {
-                            var user = JsonSerializer.Deserialize<User>(body);
-                            byte[] bytes = Encoding.UTF8.GetBytes(body);
-                            res.ContentLength64 = bytes.Length;
-                            res.ContentType = "application/json; charset=utf-8";
-                            res.StatusCode = 200;
-                            using (Stream stream = res.OutputStream)
-                            {
-                                stream.Write(bytes, 0, bytes.Length);
-                            }
+                            #region JSON
+                            //var user = JsonSerializer.Deserialize<User>(body);
+                            //byte[] bytes = Encoding.UTF8.GetBytes(body);
+                            //res.ContentLength64 = bytes.Length;
+                            //res.ContentType = "application/json; charset=utf-8";
+                            //res.StatusCode = 200;
+                            //using (Stream stream = res.OutputStream)
+                            //{
+                            //    stream.Write(bytes, 0, bytes.Length);
+                            //}
+                            #endregion
+                            var formData = HttpUtility.ParseQueryString(body);
+                            Console.WriteLine($"Login: {formData["login"]} Password {formData["pwd"]}");
+                            res.Redirect(_HOST);
                         }
                         catch (Exception ex)
                         {
