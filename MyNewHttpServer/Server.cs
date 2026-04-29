@@ -20,6 +20,7 @@ class User
 internal class Server
 {
     readonly string _HOST = "http://127.0.0.1:8080/";
+    HttpListenerRequest? req;
     public async Task RunServer()
     {
         HttpListener server = new HttpListener();
@@ -31,7 +32,7 @@ internal class Server
             try
             {
                 HttpListenerContext ctx = await server.GetContextAsync();
-                HttpListenerRequest req = ctx.Request;
+                req = ctx.Request;
                 HttpListenerResponse res = ctx.Response;
                 if (req.HttpMethod == "GET")
                 {
@@ -47,15 +48,17 @@ internal class Server
                         // base url
                         //query params
                         var queryString = req.QueryString;
-                        if (queryString != null)
+                        if (queryString != null && queryString.Count!=0)
                         {
                             Console.WriteLine($"QUERY PARAMS : {queryString["login"]} {queryString["pwd"]}");
                         }
                     }
                     string page = GetPageName(param);
 
-                    string path = Path.Combine(AppContext.BaseDirectory, "wwwroot", "pages", page);
-                    string html = await File.ReadAllTextAsync(path, req.ContentEncoding);
+                    //
+                    string pathTocontent = Path.Combine(AppContext.BaseDirectory, "wwwroot", "pages", page);
+                    string html = await File.ReadAllTextAsync(pathTocontent, req.ContentEncoding);
+                    html = await InsertContent(html);
                     byte[] bytes = Encoding.UTF8.GetBytes(html);
                     res.ContentLength64 = bytes.Length;
                     res.ContentType = "text/html; charset=utf-8";
@@ -86,7 +89,7 @@ internal class Server
                             #endregion
                             var formData = HttpUtility.ParseQueryString(body);
                             Console.WriteLine($"Login: {formData["login"]} Password {formData["pwd"]}");
-                            res.Redirect(_HOST);
+                            //res.Redirect(_HOST);
                         }
                         catch (Exception ex)
                         {
@@ -105,13 +108,22 @@ internal class Server
         }
     }
 
+
+    private async Task<string> InsertContent(string content)
+    {
+        string basePath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "pages");
+        string pathToLayout = Path.Combine(basePath,"layout.html");
+        string layout = await File.ReadAllTextAsync(pathToLayout,Encoding.UTF8);
+        return layout.Replace("{{content}}", content);
+
+    }
     private string GetPageName(string param) // /contacts
     {
         string result = param switch
         {
             "/contacts" => "contacts.html",
             "/about" => "about.html",
-            "/" => "index.html",
+            "/" => "home.html",
             _=>"notfound.html"
         };
         return result;
